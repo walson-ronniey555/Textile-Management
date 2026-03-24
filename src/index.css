@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@layer utilities {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+    }
+    .print\:p-0 {
+      padding: 0 !important;
+    }
+    /* Hide sidebar and adjust main content for print */
+    aside, .no-print-global {
+      display: none !important;
+    }
+    main {
+      margin-left: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+    }
+    /* Ensure the modal backdrop doesn't show its background during print */
+    .print-backdrop {
+      background: transparent !important;
+      position: static !important;
+      display: block !important;
+      padding: 0 !important;
+    }
+  }
+}
+
+/* Fix for html2canvas oklch color parsing error */
+.tech-sheet-container {
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  /* Redefine common colors as hex to avoid oklch parsing errors in html2canvas */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-blue-500: #3b82f6;
+  --color-red-500: #ef4444;
+  --color-green-500: #22c55e;
+  --color-amber-500: #f59e0b;
+  
+  /* Specific overrides for backgrounds used in the sheet */
+  background-color: #ffffff !important;
+  color: #111827;
+  
+  /* Ensure borders and backgrounds use hex */
+  .bg-gray-50 { background-color: #f9fafb !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-gray-50\/30 { background-color: rgba(249, 250, 251, 0.3) !important; }
+  .bg-gray-50\/50 { background-color: rgba(249, 250, 251, 0.5) !important; }
+  .border-gray-100 { border-color: #f3f4f6 !important; }
+  .border-gray-200 { border-color: #e5e7eb !important; }
+  .border-gray-50 { border-color: #f9fafb !important; }
+  
+  /* Text color overrides */
+  .text-gray-400 { color: #9ca3af !important; }
+  .text-gray-500 { color: #6b7280 !important; }
+  .text-gray-600 { color: #4b5563 !important; }
+  .text-gray-900 { color: #111827 !important; }
+  .text-gray-300 { color: #d1d5db !important; }
+  
+  /* Background color overrides */
+  .bg-white { background-color: #ffffff !important; }
+  .bg-gray-50 { background-color: #f9fafb !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-gray-200 { background-color: #e5e7eb !important; }
+  .bg-\[\#1a2340\] { background-color: #1a2340 !important; }
+  .text-white { color: #ffffff !important; }
+  .text-\[\#1a2340\] { color: #1a2340 !important; }
+}

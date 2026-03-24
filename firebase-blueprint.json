@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile with role-based access control.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "boss", "factory", "supplier"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Garment production order.",
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "reference": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "client": { "type": "string" },
+        "quantity": { "type": "number" },
+        "exportWeek": { "type": "string" },
+        "exportDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["ready", "partial", "blocked"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" }
+      },
+      "required": ["model", "reference", "orderNumber", "client", "quantity", "exportWeek", "exportDate", "status"]
+    },
+    "material": {
+      "title": "Material",
+      "description": "Required material for an order.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "composition": { "type": "string" },
+        "consumptionPerUnit": { "type": "number" },
+        "totalRequired": { "type": "number" },
+        "totalReceived": { "type": "number" },
+        "unit": { "type": "string", "enum": ["meters", "units", "coils"] },
+        "status": { "type": "string", "enum": ["ok", "partial", "missing"] },
+        "linkedImportLines": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["type", "composition", "consumptionPerUnit", "totalRequired", "totalReceived", "unit", "status"]
+    },
+    "importBundle": {
+      "title": "Import Bundle",
+      "description": "Incoming shipment of materials.",
+      "type": "object",
+      "properties": {
+        "bundleNumber": { "type": "string" },
+        "carrier": { "type": "string" },
+        "expectedDate": { "type": "string", "format": "date" },
+        "actualArrivalDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "in_transit", "arrived", "partially_received"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bundleNumber", "carrier", "expectedDate", "status"]
+    },
+    "importLine": {
+      "title": "Import Line",
+      "description": "Specific material line within an import bundle.",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "linkedOrderId": { "type": "string" },
+        "linkedMaterialId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "received"] },
+        "receivedDate": { "type": "string", "format": "date" },
+        "notes": { "type": "string" }
+      },
+      "required": ["description", "quantity", "unit", "linkedOrderId", "linkedMaterialId", "status"]
+    },
+    "exportPlan": {
+      "title": "Export Plan",
+      "description": "Weekly export planning.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "week": { "type": "string" },
+        "weekDate": { "type": "string" },
+        "plannedQty": { "type": "number" },
+        "exportedQty": { "type": "number" },
+        "remaining": { "type": "number" },
+        "channel": { "type": "string" }
+      },
+      "required": ["orderId", "orderNumber", "week", "weekDate", "plannedQty", "exportedQty", "remaining", "channel"]
+    },
+    "notification": {
+      "title": "Notification",
+      "description": "System notification for users.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["import_arrived", "production_blocked", "order_ready", "export_due"] },
+        "message": { "type": "string" },
+        "orderId": { "type": "string" },
+        "bundleId": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "targetRoles": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["type", "message", "isRead", "createdAt", "targetRoles"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles."
+    },
+    "/orders/{orderId}": {
+      "schema": "order",
+      "description": "Garment orders."
+    },
+    "/orders/{orderId}/materials/{materialId}": {
+      "schema": "material",
+      "description": "Materials required for an order."
+    },
+    "/importBundles/{bundleId}": {
+      "schema": "importBundle",
+      "description": "Import bundles."
+    },
+    "/importBundles/{bundleId}/lines/{lineId}": {
+      "schema": "importLine",
+      "description": "Lines within an import bundle."
+    },
+    "/exportPlan/{planId}": {
+      "schema": "exportPlan",
+      "description": "Export planning records."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "notification",
+      "description": "System notifications."
+    }
+  }
+}

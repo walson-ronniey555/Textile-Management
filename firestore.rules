@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - role: string (required, enum: ["admin", "boss", "factory", "supplier"])
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: orders
+    // Document ID: orderId
+    // Fields:
+    //   - model: string (required)
+    //   - reference: string (required)
+    //   - orderNumber: string (required)
+    //   - client: string (required)
+    //   - quantity: number (required)
+    //   - exportWeek: string (required)
+    //   - exportDate: string (required)
+    //   - status: string (required, enum: ["ready", "partial", "blocked"])
+    //   - createdAt: timestamp (required)
+    //   - notes: string (optional)
+    //
+    // Collection: orders/{orderId}/materials
+    // Document ID: materialId
+    // Fields:
+    //   - type: string (required)
+    //   - composition: string (required)
+    //   - consumptionPerUnit: number (required)
+    //   - totalRequired: number (required)
+    //   - totalReceived: number (required)
+    //   - unit: string (required, enum: ["meters", "units", "coils"])
+    //   - status: string (required, enum: ["ok", "partial", "missing"])
+    //   - linkedImportLines: array (required)
+    //
+    // Collection: importBundles
+    // Document ID: bundleId
+    // Fields:
+    //   - bundleNumber: string (required)
+    //   - carrier: string (required)
+    //   - expectedDate: string (required)
+    //   - actualArrivalDate: string (optional)
+    //   - status: string (required, enum: ["pending", "in_transit", "arrived", "partially_received"])
+    //   - notes: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: importBundles/{bundleId}/lines
+    // Document ID: lineId
+    // Fields:
+    //   - description: string (required)
+    //   - quantity: number (required)
+    //   - unit: string (required)
+    //   - linkedOrderId: string (required)
+    //   - linkedMaterialId: string (required)
+    //   - status: string (required, enum: ["pending", "received"])
+    //   - receivedDate: string (optional)
+    //   - notes: string (optional)
+    //
+    // Collection: exportPlan
+    // Document ID: planId
+    // Fields:
+    //   - orderId: string (required)
+    //   - orderNumber: string (required)
+    //   - week: string (required)
+    //   - weekDate: string (required)
+    //   - plannedQty: number (required)
+    //   - exportedQty: number (required)
+    //   - remaining: number (required)
+    //   - channel: string (required)
+    //
+    // Collection: notifications
+    // Document ID: notificationId
+    // Fields:
+    //   - type: string (required)
+    //   - message: string (required)
+    //   - orderId: string (optional)
+    //   - bundleId: string (optional)
+    //   - isRead: bool (required)
+    //   - createdAt: timestamp (required)
+    //   - targetRoles: array (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUserEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "omarfarah192@gmail.com" && isUserEmailVerified()) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "admin")
+      );
+    }
+
+    function isBoss() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "boss";
+    }
+
+    function isFactory() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "factory";
+    }
+
+    function isSupplier() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "supplier";
+    }
+
+    function hasAnyRole() {
+      return isAdmin() || isBoss() || isFactory() || isSupplier();
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ["admin", "boss", "factory", "supplier"] &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data) && (request.resource.data.role != "admin" || request.auth.token.email == "omarfarah192@gmail.com");
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role && isValidUser(request.resource.data)) ||
+        isAdmin()
+      );
+    }
+
+    match /orders/{orderId} {
+      allow read: if hasAnyRole();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isFactory();
+      allow delete: if isAdmin();
+
+      match /materials/{materialId} {
+        allow read: if hasAnyRole();
+        allow create: if isAdmin();
+        allow update: if isAdmin() || isFactory();
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /importBundles/{bundleId} {
+      allow read: if hasAnyRole();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isSupplier();
+      allow delete: if isAdmin();
+
+      match /lines/{lineId} {
+        allow read: if hasAnyRole();
+        allow create: if isAdmin();
+        allow update: if isAdmin() || isSupplier();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Allow collection group queries for lines
+    match /{path=**}/lines/{lineId} {
+      allow read: if hasAnyRole();
+    }
+
+    match /exportPlan/{planId} {
+      allow read: if hasAnyRole();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if hasAnyRole() && (getUserData().role in resource.data.targetRoles);
+      allow create: if hasAnyRole(); // System logic creates notifications
+      allow update: if hasAnyRole() && (getUserData().role in resource.data.targetRoles);
+      allow delete: if isAdmin();
+    }
+  }
+}
