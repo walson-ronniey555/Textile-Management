@@ -105,28 +105,30 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    function hasRole(role) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role == role;
+    }
+
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email == "omarfarah192@gmail.com" && isUserEmailVerified()) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "admin")
+        (request.auth.token.email == "omarfarah192@gmail.com") ||
+        hasRole("admin")
       );
     }
 
-    function isBoss() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "boss";
-    }
-
-    function isFactory() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "factory";
-    }
-
-    function isSupplier() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == "supplier";
-    }
-
     function hasAnyRole() {
-      return isAdmin() || isBoss() || isFactory() || isSupplier();
+      return isAdmin() || (
+             isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role in ["admin", "boss", "factory", "supplier"]
+      );
     }
+
+    function isBoss() { return hasRole("boss"); }
+    function isFactory() { return hasRole("factory"); }
+    function isSupplier() { return hasRole("supplier"); }
 
     function isValidEmail(email) {
       return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
@@ -154,7 +156,7 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if hasAnyRole();
+      allow read: if isAuthenticated();
       allow create: if isAdmin();
       allow update: if isAdmin() || isFactory();
       allow delete: if isAdmin();

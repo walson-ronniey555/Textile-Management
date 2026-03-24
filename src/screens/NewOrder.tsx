@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createOrder, checkOrderExists } from '../services/dataService';
 import { ChevronLeft, Save, Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import { resizeImage } from '../lib/imageUtils';
 
 const NewOrder: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +25,14 @@ const NewOrder: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, imageUrl: reader.result as string });
+      reader.onloadend = async () => {
+        try {
+          const resized = await resizeImage(reader.result as string);
+          setFormData({ ...formData, imageUrl: resized });
+        } catch (err) {
+          console.error('Error resizing image:', err);
+          setError('Failed to process image. Please try a different one.');
+        }
       };
       reader.readAsDataURL(file);
     }
