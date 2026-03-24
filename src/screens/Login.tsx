@@ -22,7 +22,7 @@ const Login: React.FC = () => {
         <div className="w-16 h-16 bg-[#1a2340] rounded-2xl flex items-center justify-center mx-auto mb-6">
           <LogIn className="text-white" size={32} />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">TextilFlow</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">NORYOTEX</h1>
         <p className="text-gray-500 mb-8">Manage garment production readiness with ease.</p>
         
         <button
