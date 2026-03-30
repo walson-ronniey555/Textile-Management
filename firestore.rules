@@ -195,6 +195,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     match /notifications/{notificationId} {
       allow read: if hasAnyRole() && (getUserData().role in resource.data.targetRoles);
       allow create: if hasAnyRole(); // System logic creates notifications

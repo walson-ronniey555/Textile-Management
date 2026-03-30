@@ -12,6 +12,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
+  isLoading?: boolean;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -22,60 +23,57 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  variant = 'warning'
+  variant = 'warning',
+  isLoading = false
 }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden border border-slate-100"
           >
-            <div className="p-6">
-              <div className="flex items-start gap-4">
+            <div className="p-8">
+              <div className="flex flex-col items-center text-center gap-6">
                 <div className={cn(
-                  "p-3 rounded-full shrink-0",
-                  variant === 'danger' ? "bg-red-100 text-red-600" :
-                  variant === 'warning' ? "bg-amber-100 text-amber-600" :
-                  "bg-blue-100 text-blue-600"
+                  "p-5 rounded-[2rem] shrink-0 shadow-lg",
+                  variant === 'danger' ? "bg-rose-50 text-rose-600 shadow-rose-100" :
+                  variant === 'warning' ? "bg-amber-50 text-amber-600 shadow-amber-100" :
+                  "bg-blue-50 text-blue-600 shadow-blue-100"
                 )}>
-                  <AlertTriangle size={24} />
+                  <AlertTriangle size={40} strokeWidth={1.5} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h3>
+                  <p className="text-slate-500 leading-relaxed font-medium">{message}</p>
                 </div>
-                <button 
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
               </div>
             </div>
             
-            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+            <div className="bg-slate-50/50 px-8 py-6 flex gap-4 border-t border-slate-100">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                disabled={isLoading}
+                className="btn-secondary flex-1"
               >
                 {cancelText}
               </button>
               <button
                 onClick={() => {
                   onConfirm();
-                  onClose();
                 }}
+                disabled={isLoading}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors shadow-sm",
-                  variant === 'danger' ? "bg-red-600 hover:bg-red-700" :
-                  variant === 'warning' ? "bg-amber-600 hover:bg-amber-700" :
-                  "bg-blue-600 hover:bg-blue-700"
+                  "btn-primary flex-1 flex items-center justify-center gap-2",
+                  variant === 'danger' ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200" :
+                  variant === 'warning' ? "bg-amber-600 hover:bg-amber-700 shadow-amber-200" :
+                  "bg-slate-900 hover:bg-slate-800 shadow-slate-200"
                 )}
               >
+                {isLoading && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                 {confirmText}
               </button>
             </div>

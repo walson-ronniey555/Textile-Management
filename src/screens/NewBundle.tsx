@@ -1,27 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createBundle } from '../services/dataService';
+import { createBundle, subscribeToSettings, addSettingOption } from '../services/dataService';
 import { ChevronLeft, Save } from 'lucide-react';
 import { motion } from 'motion/react';
-
-const CARRIERS = ['AIRSEA', 'DACHSER', 'ADUANA ALIE', 'EMA LOG', 'Other'];
+import { AppSettings } from '../types';
 
 const NewBundle: React.FC = () => {
   const navigate = useNavigate();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isOtherCarrier, setIsOtherCarrier] = useState(false);
+  const [otherCarrierValue, setOtherCarrierValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     bundleNumber: '',
-    carrier: CARRIERS[0],
+    carrier: '',
     expectedDate: '',
     notes: ''
   });
 
+  useEffect(() => {
+    const unsubscribe = subscribeToSettings((data) => {
+      setSettings(data);
+      if (data?.carriers && data.carriers.length > 0 && !formData.carrier) {
+        setFormData(prev => ({ ...prev, carrier: data.carriers[0] }));
+      }
+    });
+    return () => unsubscribe();
+  }, [formData.carrier]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const bundleId = await createBundle(formData);
-    if (bundleId) {
-      navigate(`/bundles/${bundleId}`);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      let finalCarrier = formData.carrier;
+      if (isOtherCarrier && otherCarrierValue.trim()) {
+        finalCarrier = otherCarrierValue.trim();
+        // Automatically add to settings
+        await addSettingOption('carriers', finalCarrier);
+      }
+
+      const bundleId = await createBundle({
+        ...formData,
+        carrier: finalCarrier
+      });
+
+      if (bundleId) {
+        navigate(`/bundles/${bundleId}`);
+      }
+    } catch (error) {
+      console.error('Error creating bundle:', error);
+      setIsSubmitting(false);
     }
   };
+
+  const carrierOptions = settings?.carriers || [];
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -58,12 +92,45 @@ const NewBundle: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Carrier</label>
               <select 
-                value={formData.carrier}
-                onChange={(e) => setFormData({ ...formData, carrier: e.target.value })}
+                required
+                value={isOtherCarrier ? 'other' : formData.carrier}
+                onChange={(e) => {
+                  if (e.target.value === 'other') {
+                    setIsOtherCarrier(true);
+                  } else {
+                    setIsOtherCarrier(false);
+                    setFormData({ ...formData, carrier: e.target.value });
+                  }
+                }}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a2340] transition-all"
               >
-                {CARRIERS.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="">Select a Carrier</option>
+                {carrierOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="other">Other...</option>
               </select>
+              
+              {isOtherCarrier && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="pt-2"
+                >
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Enter new carrier name"
+                    value={otherCarrierValue}
+                    onChange={(e) => setOtherCarrierValue(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border-2 border-[#1a2340] rounded-xl focus:outline-none transition-all shadow-sm"
+                  />
+                </motion.div>
+              )}
+
+              {carrierOptions.length === 0 && !isOtherCarrier && (
+                <p className="text-[10px] text-amber-600 font-bold">
+                  No carriers found in settings. Please add them in the Settings page or select "Other...".
+                </p>
+              )}
             </div>
           </div>
 
@@ -98,10 +165,17 @@ const NewBundle: React.FC = () => {
             </Link>
             <button 
               type="submit"
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-[#1a2340] text-white font-bold rounded-2xl hover:bg-[#2a3a60] transition-all shadow-lg"
+              disabled={isSubmitting || !formData.carrier}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-[#1a2340] text-white font-bold rounded-2xl hover:bg-[#2a3a60] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={20} />
-              Save Bundle
+              {isSubmitting ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save size={20} />
+                  Save Bundle
+                </>
+              )}
             </button>
           </div>
         </form>

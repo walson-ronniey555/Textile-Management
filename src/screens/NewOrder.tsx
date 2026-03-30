@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createOrder, checkOrderExists } from '../services/dataService';
+import { createOrder, checkOrderExists, subscribeToSettings, addSettingOption } from '../services/dataService';
 import { ChevronLeft, Save, Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { resizeImage } from '../lib/imageUtils';
+import { AppSettings } from '../types';
 
 const NewOrder: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isOtherClient, setIsOtherClient] = useState(false);
+  const [otherClientValue, setOtherClientValue] = useState('');
   const [formData, setFormData] = useState({
     model: '',
     reference: '',
@@ -20,6 +24,11 @@ const NewOrder: React.FC = () => {
     exportDate: '',
     notes: ''
   });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSettings(setSettings);
+    return () => unsubscribe();
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,7 +60,18 @@ const NewOrder: React.FC = () => {
         return;
       }
 
-      const orderId = await createOrder(formData);
+      let finalClient = formData.client;
+      if (isOtherClient && otherClientValue.trim()) {
+        finalClient = otherClientValue.trim();
+        // Automatically add to settings
+        await addSettingOption('customers', finalClient);
+      }
+
+      const orderId = await createOrder({
+        ...formData,
+        client: finalClient
+      });
+
       if (orderId) {
         navigate(`/orders/${orderId}`, { state: { showAddMaterial: true } });
       }
@@ -135,14 +155,44 @@ const NewOrder: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Client</label>
-              <input 
-                type="text" 
+              <select
                 required
-                placeholder="e.g., H&M Store"
-                value={formData.client}
-                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                value={isOtherClient ? 'other' : formData.client}
+                onChange={(e) => {
+                  if (e.target.value === 'other') {
+                    setIsOtherClient(true);
+                  } else {
+                    setIsOtherClient(false);
+                    setFormData({ ...formData, client: e.target.value });
+                  }
+                }}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a2340] transition-all"
-              />
+              >
+                <option value="">Select a customer</option>
+                {(settings?.customers || []).map((customer) => (
+                  <option key={customer} value={customer}>
+                    {customer}
+                  </option>
+                ))}
+                <option value="other">Other...</option>
+              </select>
+              
+              {isOtherClient && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="pt-2"
+                >
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Enter new customer name"
+                    value={otherClientValue}
+                    onChange={(e) => setOtherClientValue(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border-2 border-[#1a2340] rounded-xl focus:outline-none transition-all shadow-sm"
+                  />
+                </motion.div>
+              )}
             </div>
           </div>
 

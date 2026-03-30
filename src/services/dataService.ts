@@ -4,6 +4,7 @@ import {
   collectionGroup,
   doc, 
   getDoc, 
+  setDoc,
   getDocs,
   updateDoc, 
   addDoc, 
@@ -32,8 +33,79 @@ import {
   OrderStatus, 
   MaterialStatus,
   ImportLineStatus,
-  BundleStatus
+  BundleStatus,
+  AppSettings
 } from '../types';
+
+// Settings
+export const getSettings = async () => {
+  try {
+    const docRef = doc(db, 'settings', 'app');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as AppSettings;
+    }
+    // Default settings if none exist
+    const defaultSettings: Omit<AppSettings, 'id'> = {
+      materialTypes: ['Fabric', 'Thread', 'Zipper', 'Button', 'Elastic', 'Label'],
+      customers: ['Customer A', 'Customer B'],
+      carriers: ['DHL', 'FedEx', 'UPS'],
+      updatedAt: Timestamp.now()
+    };
+    await setDoc(docRef, defaultSettings);
+    return { id: 'app', ...defaultSettings } as AppSettings;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, 'settings/app');
+    return null;
+  }
+};
+
+export const updateSettings = async (data: Partial<AppSettings>) => {
+  try {
+    const docRef = doc(db, 'settings', 'app');
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: Timestamp.now()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, 'settings/app');
+  }
+};
+
+export const addSettingOption = async (list: 'materialTypes' | 'customers' | 'carriers', value: string) => {
+  if (!value || !value.trim()) return;
+  const trimmedValue = value.trim();
+  
+  try {
+    const settings = await getSettings();
+    if (!settings) return;
+    
+    if (!settings[list].includes(trimmedValue)) {
+      const newList = [...settings[list], trimmedValue];
+      await updateSettings({ [list]: newList });
+    }
+  } catch (error) {
+    console.error(`Error adding ${list} option:`, error);
+  }
+};
+
+let isCreatingSettings = false;
+
+export const subscribeToSettings = (callback: (settings: AppSettings) => void) => {
+  const docRef = doc(db, 'settings', 'app');
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback({ id: snapshot.id, ...snapshot.data() } as AppSettings);
+    } else if (!isCreatingSettings) {
+      isCreatingSettings = true;
+      getSettings().finally(() => {
+        isCreatingSettings = false;
+      });
+    }
+  }, (error) => {
+    console.error('Settings subscription error:', error);
+  });
+};
 
 // Orders
 export const checkOrderExists = async (orderNumber: string, excludeOrderId?: string) => {
@@ -152,7 +224,7 @@ export const subscribeToMaterials = (orderId: string, callback: (materials: Mate
   }, (error) => handleFirestoreError(error, OperationType.LIST, `orders/${orderId}/materials`));
 };
 
-export const addMaterial = async (orderId: string, materialData: Omit<Material, 'id' | 'totalReceived' | 'status' | 'linkedImportLines'>) => {
+export const addMaterial = async (orderId: string, materialData: Omit<Material, 'id' | 'totalReceived' | 'totalArrived' | 'status' | 'linkedImportLines'>) => {
   try {
     const newMaterial = {
       ...materialData,

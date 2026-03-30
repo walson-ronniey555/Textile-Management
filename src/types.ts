@@ -102,3 +102,11 @@ export interface Notification {
   createdAt: Timestamp;
   targetRoles: UserRole[];
 }
+
+export interface AppSettings {
+  id: string;
+  materialTypes: string[];
+  customers: string[];
+  carriers: string[];
+  updatedAt: Timestamp;
+}

@@ -1,5 +1,44 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: #1e293b;
+  --color-secondary: #64748b;
+  --color-accent: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-slate-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .card-calm {
+    @apply bg-white rounded-3xl border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md;
+  }
+  
+  .btn-primary {
+    @apply bg-slate-900 text-white px-6 py-2.5 rounded-2xl font-semibold transition-all duration-200 hover:bg-slate-800 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-slate-700 border border-slate-200 px-6 py-2.5 rounded-2xl font-semibold transition-all duration-200 hover:bg-slate-50 active:scale-95 disabled:opacity-50 shadow-sm;
+  }
+  
+  .input-calm {
+    @apply w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 transition-all outline-none text-slate-900 placeholder:text-slate-400;
+  }
+}
+
 @layer utilities {
   @media print {
     .no-print {

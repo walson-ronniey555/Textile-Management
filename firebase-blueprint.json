@@ -108,6 +108,18 @@
         "targetRoles": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["type", "message", "isRead", "createdAt", "targetRoles"]
+    },
+    "settings": {
+      "title": "App Settings",
+      "description": "Global application configurations.",
+      "type": "object",
+      "properties": {
+        "materialTypes": { "type": "array", "items": { "type": "string" } },
+        "customers": { "type": "array", "items": { "type": "string" } },
+        "carriers": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["materialTypes", "customers", "carriers"]
     }
   },
   "firestore": {
@@ -138,6 +150,10 @@
     "/notifications/{notificationId}": {
       "schema": "notification",
       "description": "System notifications."
+    },
+    "/settings/{settingId}": {
+      "schema": "settings",
+      "description": "Global app settings."
     }
   }
 }

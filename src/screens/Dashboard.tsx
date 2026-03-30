@@ -76,10 +76,10 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500">Welcome back, {profile?.displayName || 'User'}.</p>
+          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+          <p className="text-slate-500 mt-1 font-medium">Welcome back, <span className="text-slate-900">{profile?.displayName || 'User'}</span>.</p>
         </div>
         <div className="flex items-center gap-3">
           {profile && (
@@ -87,19 +87,19 @@ const Dashboard: React.FC = () => {
               onClick={handleSync}
               disabled={isSyncing}
               className={cn(
-                "flex items-center gap-2 bg-white text-gray-700 px-4 py-2.5 rounded-xl font-semibold border border-gray-200 hover:bg-gray-50 transition-all shadow-sm",
+                "btn-secondary flex items-center gap-2",
                 isSyncing && "opacity-50 cursor-not-allowed"
               )}
-              title="Recalculate all order percentages"
+              title="Recalculate all order data"
             >
-              <RefreshCw size={20} className={cn(isSyncing && "animate-spin")} />
+              <RefreshCw size={18} className={cn(isSyncing && "animate-spin")} />
               <span className="hidden sm:inline">Sync Data</span>
             </button>
           )}
-          <Link to="/notifications" className="relative p-2 bg-white rounded-xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors">
-            <Bell size={24} className="text-gray-600" />
+          <Link to="/notifications" className="relative p-3 bg-white rounded-2xl shadow-sm border border-slate-100 hover:bg-slate-50 transition-all active:scale-95">
+            <Bell size={22} className="text-slate-600" />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                 {unreadCount}
               </span>
             )}
@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
           {profile?.role === 'admin' && (
             <Link 
               to="/orders/new" 
-              className="flex items-center gap-2 bg-[#1a2340] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#2a3a60] transition-colors shadow-sm"
+              className="btn-primary flex items-center gap-2"
             >
               <Plus size={20} />
               New Order
@@ -119,40 +119,36 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Orders', value: stats.total, icon: Package, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Ready', value: stats.ready, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Partial', value: stats.partial, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { label: 'Blocked', value: stats.blocked, icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
-          { label: 'Week Exports', value: stats.thisWeek, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Total Orders', value: stats.total, icon: Package, color: 'text-blue-600', bg: 'bg-blue-50/50' },
+          { label: 'Ready', value: stats.ready, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          { label: 'Partial', value: stats.partial, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50/50' },
+          { label: 'Blocked', value: stats.blocked, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50/50' },
+          { label: 'Week Exports', value: stats.thisWeek, icon: TrendingUp, color: 'text-violet-600', bg: 'bg-violet-50/50' },
         ].map((stat, i) => (
           <motion.div 
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
+            className="card-calm p-5"
           >
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3", stat.bg)}>
-              <stat.icon size={20} className={stat.color} />
+            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-inner", stat.bg)}>
+              <stat.icon size={22} className={stat.color} />
             </div>
-            <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-3xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Filters & List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
           {(['all', 'ready', 'partial', 'blocked'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={cn(
-                "px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap capitalize",
-                filter === f 
-                  ? "bg-[#1a2340] text-white shadow-md" 
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+              className={cn( f === filter ? "btn-primary px-6 py-2" : "btn-secondary px-6 py-2", "capitalize"
               )}
             >
               {f}
@@ -161,16 +157,16 @@ const Dashboard: React.FC = () => {
         </div>
 
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-3xl border-2 border-dashed border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package size={32} className="text-gray-300" />
+          <div className="bg-white rounded-[2rem] border-2 border-dashed border-slate-100 p-16 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <Package size={40} className="text-slate-300" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-gray-500 mb-6 max-w-xs mx-auto">Create your first order to start managing production readiness.</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">No orders yet</h3>
+            <p className="text-slate-500 mb-8 max-w-xs mx-auto font-medium">Create your first order to start managing production readiness.</p>
             {profile?.role === 'admin' && (
               <Link 
                 to="/orders/new" 
-                className="inline-flex items-center gap-2 bg-[#1a2340] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#2a3a60] transition-all shadow-sm"
+                className="btn-primary inline-flex items-center gap-2"
               >
                 <Plus size={20} />
                 Create First Order
@@ -184,51 +180,55 @@ const Dashboard: React.FC = () => {
                 key={order.id} 
                 to={`/orders/${order.id}`}
                 className={cn(
-                  "group bg-white rounded-3xl shadow-sm border-l-8 p-6 hover:shadow-md transition-all",
-                  order.status === 'ready' ? "border-green-500" : 
-                  order.status === 'partial' ? "border-amber-500" : "border-red-500"
+                  "group card-calm p-6 border-l-[6px]",
+                  order.status === 'ready' ? "border-emerald-500" : 
+                  order.status === 'partial' ? "border-amber-500" : "border-rose-500"
                 )}
               >
-                <div className="flex gap-4 mb-4">
+                <div className="flex gap-5 mb-6">
                   {order.imageUrl && (
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-100 shrink-0">
-                      <img src={order.imageUrl} alt={order.model} className="w-full h-full object-cover" />
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shrink-0 shadow-sm">
+                      <img src={order.imageUrl} alt={order.model} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#1a2340] transition-colors truncate">{order.model}</h3>
-                    <p className="text-sm text-gray-500 font-medium truncate">{order.orderNumber} • {order.client}</p>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-slate-900 group-hover:text-slate-700 transition-colors truncate tracking-tight">{order.model}</h3>
+                    </div>
+                    <p className="text-sm text-slate-500 font-bold truncate tracking-tight mb-2">{order.orderNumber} • {order.client}</p>
+                    <span className={cn(
+                      "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest h-fit inline-block",
+                      order.status === 'ready' ? "bg-emerald-100 text-emerald-700" : 
+                      order.status === 'partial' ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"
+                    )}>
+                      {order.status === 'ready' ? 'Ready (100%)' : 
+                       order.status === 'partial' 
+                         ? (order.arrivedPercent && order.arrivedPercent > 0
+                             ? `Partial (Rec: ${order.receivedPercent || 0}% | Arr: ${order.arrivedPercent}%)`
+                             : (order.plannedPercent && order.plannedPercent > 0 && (order.receivedPercent || 0) === 0
+                                 ? `Partial (Planned: ${order.plannedPercent}%)`
+                                 : `Partial (${order.receivedPercent || 0}%)`))
+                         : `Blocked (${order.receivedPercent || 0}%)`}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider h-fit",
-                    order.status === 'ready' ? "bg-green-100 text-green-700" : 
-                    order.status === 'partial' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
-                  )}>
-                    {order.status === 'ready' ? 'Ready (100%)' : 
-                     order.status === 'partial' 
-                       ? (order.arrivedPercent && order.arrivedPercent > 0
-                           ? `Partial (Rec: ${order.receivedPercent || 0}% | Arr: ${order.arrivedPercent}%)`
-                           : (order.plannedPercent && order.plannedPercent > 0 && (order.receivedPercent || 0) === 0
-                               ? `Partial (Planned: ${order.plannedPercent}%)`
-                               : `Partial (${order.receivedPercent || 0}%)`))
-                       : `Blocked (${order.receivedPercent || 0}%)`}
-                  </span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 p-3 rounded-2xl">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Export Week</p>
-                    <p className="text-sm font-bold text-gray-700">{order.exportWeek}</p>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100/50">
+                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Export Week</p>
+                    <p className="text-sm font-bold text-slate-700">{order.exportWeek}</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-2xl">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Quantity</p>
-                    <p className="text-sm font-bold text-gray-700">{order.quantity.toLocaleString()}</p>
+                  <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100/50">
+                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Quantity</p>
+                    <p className="text-sm font-bold text-slate-700">{order.quantity.toLocaleString()}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-bold text-[#1a2340]">
-                  <span>View Details</span>
-                  <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                <div className="flex items-center justify-between text-sm font-bold text-slate-900 pt-4 border-t border-slate-50">
+                  <span className="group-hover:translate-x-1 transition-transform inline-flex items-center gap-2">
+                    View Details
+                    <ChevronRight size={18} />
+                  </span>
                 </div>
               </Link>
             ))}

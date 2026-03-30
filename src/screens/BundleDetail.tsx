@@ -43,6 +43,10 @@ const BundleDetail: React.FC = () => {
   const [arrivalDate, setArrivalDate] = useState(new Date().toISOString().split('T')[0]);
   const [pendingStatus, setPendingStatus] = useState<ImportBundle['status'] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmittingLine, setIsSubmittingLine] = useState(false);
+  const [isSubmittingDeleteLine, setIsSubmittingDeleteLine] = useState(false);
+  const [isSubmittingStatusUpdate, setIsSubmittingStatusUpdate] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // New Line Form State
   const [newLine, setNewLine] = useState({
@@ -93,24 +97,32 @@ const BundleDetail: React.FC = () => {
 
   const handleAddLine = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bundleId) return;
+    if (!bundleId || isSubmittingLine) return;
+    setIsSubmittingLine(true);
 
-    await addImportLine(bundleId, newLine);
-    setIsAddingLine(false);
-    toast.success('Import line added successfully');
-    setNewLine({
-      bundleId: bundleId || '',
-      description: '',
-      quantity: 0,
-      unit: 'meters',
-      linkedOrderId: '',
-      linkedMaterialId: '',
-      notes: ''
-    });
+    try {
+      await addImportLine(bundleId, newLine);
+      setIsAddingLine(false);
+      toast.success('Import line added successfully');
+      setNewLine({
+        bundleId: bundleId || '',
+        description: '',
+        quantity: 0,
+        unit: 'meters',
+        linkedOrderId: '',
+        linkedMaterialId: '',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Error adding import line:', error);
+      toast.error('Failed to add import line');
+    } finally {
+      setIsSubmittingLine(false);
+    }
   };
 
   const handleUpdateStatus = async (newStatus: ImportBundle['status']) => {
-    if (!bundleId || !bundle) return;
+    if (!bundleId || !bundle || isSubmittingStatusUpdate) return;
     
     if (newStatus === 'arrived') {
       setPendingStatus(newStatus);
@@ -123,6 +135,7 @@ const BundleDetail: React.FC = () => {
       return;
     }
 
+    setIsSubmittingStatusUpdate(true);
     try {
       await updateBundleStatus(bundleId, newStatus);
       setBundle({ ...bundle, status: newStatus });
@@ -130,11 +143,14 @@ const BundleDetail: React.FC = () => {
     } catch (error) {
       console.error('Error updating bundle status:', error);
       toast.error('Failed to update bundle status');
+    } finally {
+      setIsSubmittingStatusUpdate(false);
     }
   };
 
   const confirmReceived = async () => {
-    if (!bundleId || !bundle) return;
+    if (!bundleId || !bundle || isSubmittingStatusUpdate) return;
+    setIsSubmittingStatusUpdate(true);
     try {
       await updateBundleStatus(bundleId, 'received');
       setBundle({ ...bundle, status: 'received' });
@@ -143,11 +159,14 @@ const BundleDetail: React.FC = () => {
     } catch (error) {
       console.error('Error marking bundle as received:', error);
       toast.error('Failed to mark bundle as received');
+    } finally {
+      setIsSubmittingStatusUpdate(false);
     }
   };
 
   const confirmArrival = async () => {
-    if (!bundleId || !bundle || !pendingStatus) return;
+    if (!bundleId || !bundle || !pendingStatus || isSubmittingStatusUpdate) return;
+    setIsSubmittingStatusUpdate(true);
     try {
       await updateBundleStatus(bundleId, pendingStatus, arrivalDate);
       setBundle({ ...bundle, status: pendingStatus, actualArrivalDate: arrivalDate });
@@ -157,6 +176,8 @@ const BundleDetail: React.FC = () => {
     } catch (error) {
       console.error('Error confirming arrival:', error);
       toast.error('Failed to confirm arrival');
+    } finally {
+      setIsSubmittingStatusUpdate(false);
     }
   };
 
@@ -166,7 +187,8 @@ const BundleDetail: React.FC = () => {
   };
 
   const confirmDeleteLine = async () => {
-    if (!bundleId || !lineToDelete) return;
+    if (!bundleId || !lineToDelete || isSubmittingDeleteLine) return;
+    setIsSubmittingDeleteLine(true);
     try {
       await deleteImportLine(bundleId, lineToDelete);
       toast.success('Line item deleted successfully');
@@ -174,6 +196,7 @@ const BundleDetail: React.FC = () => {
       console.error('Error deleting line:', error);
       toast.error('Failed to delete line item');
     } finally {
+      setIsSubmittingDeleteLine(false);
       setIsDeletingLine(false);
       setLineToDelete(null);
     }
@@ -186,7 +209,8 @@ const BundleDetail: React.FC = () => {
 
   const confirmEditLine = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bundleId || !editingLine) return;
+    if (!bundleId || !editingLine || isSubmittingLine) return;
+    setIsSubmittingLine(true);
     try {
       await updateImportLine(bundleId, editingLine.id, {
         description: editingLine.description,
@@ -200,6 +224,8 @@ const BundleDetail: React.FC = () => {
     } catch (error) {
       console.error('Error updating line:', error);
       toast.error('Failed to update line item');
+    } finally {
+      setIsSubmittingLine(false);
     }
   };
 
@@ -367,6 +393,7 @@ const BundleDetail: React.FC = () => {
             message="Marking this bundle as Received will mark ALL items inside as received and update material availability. This action cannot be easily undone."
             confirmText="Mark as Received"
             variant="warning"
+            isLoading={isSubmittingStatusUpdate}
           />
         )}
 
@@ -379,6 +406,7 @@ const BundleDetail: React.FC = () => {
             message="Are you sure you want to delete this line item? This will update the material progress for the linked order."
             confirmText="Delete Line"
             variant="danger"
+            isLoading={isSubmittingDeleteLine}
           />
         )}
 
@@ -450,8 +478,10 @@ const BundleDetail: React.FC = () => {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg"
+                    disabled={isSubmittingLine}
+                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                   >
+                    {isSubmittingLine && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                     Save Changes
                   </button>
                 </div>
@@ -552,9 +582,14 @@ const BundleDetail: React.FC = () => {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg"
+                    disabled={isSubmittingLine}
+                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg disabled:opacity-50"
                   >
-                    Add Line
+                    {isSubmittingLine ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                    ) : (
+                      'Add Line'
+                    )}
                   </button>
                 </div>
               </form>
@@ -596,8 +631,10 @@ const BundleDetail: React.FC = () => {
                   </button>
                   <button 
                     onClick={confirmArrival}
-                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg"
+                    disabled={isSubmittingStatusUpdate}
+                    className="flex-1 px-4 py-3 bg-[#1a2340] text-white font-bold rounded-xl hover:bg-[#2a3a60] transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                   >
+                    {isSubmittingStatusUpdate && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                     Confirm
                   </button>
                 </div>

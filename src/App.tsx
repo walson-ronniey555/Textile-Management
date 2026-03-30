@@ -18,6 +18,7 @@ import BundleDetail from './screens/BundleDetail';
 import NewBundle from './screens/NewBundle';
 import ExportPlanScreen from './screens/ExportPlan';
 import Notifications from './screens/Notifications';
+import Settings from './screens/Settings';
 import { Toaster } from 'sonner';
 
 export default function App() {
@@ -49,7 +50,7 @@ export default function App() {
             <Route path="/notifications" element={<Notifications />} />
             
             {/* Settings */}
-            <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin']}><div className="p-8 text-center text-gray-500">Settings coming soon.</div></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin']}><Settings /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

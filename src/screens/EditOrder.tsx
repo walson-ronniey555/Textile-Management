@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { getOrder, updateOrder, checkOrderExists } from '../services/dataService';
+import { getOrder, updateOrder, checkOrderExists, subscribeToSettings, addSettingOption } from '../services/dataService';
 import { ChevronLeft, Save, Upload, X, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { resizeImage } from '../lib/imageUtils';
+import { AppSettings } from '../types';
 
 const EditOrder: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -11,6 +12,9 @@ const EditOrder: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isOtherClient, setIsOtherClient] = useState(false);
+  const [otherClientValue, setOtherClientValue] = useState('');
   const [formData, setFormData] = useState({
     model: '',
     reference: '',
@@ -22,6 +26,11 @@ const EditOrder: React.FC = () => {
     exportDate: '',
     notes: ''
   });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSettings(setSettings);
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!orderId) return;
@@ -76,7 +85,17 @@ const EditOrder: React.FC = () => {
         return;
       }
 
-      await updateOrder(orderId, formData);
+      let finalClient = formData.client;
+      if (isOtherClient && otherClientValue.trim()) {
+        finalClient = otherClientValue.trim();
+        // Automatically add to settings
+        await addSettingOption('customers', finalClient);
+      }
+
+      await updateOrder(orderId, {
+        ...formData,
+        client: finalClient
+      });
       navigate(`/orders/${orderId}`);
     } catch (err) {
       setError('An error occurred while updating the order. Please try again.');
@@ -160,14 +179,44 @@ const EditOrder: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Client</label>
-              <input 
-                type="text" 
+              <select
                 required
-                placeholder="e.g., H&M Store"
-                value={formData.client}
-                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                value={isOtherClient ? 'other' : formData.client}
+                onChange={(e) => {
+                  if (e.target.value === 'other') {
+                    setIsOtherClient(true);
+                  } else {
+                    setIsOtherClient(false);
+                    setFormData({ ...formData, client: e.target.value });
+                  }
+                }}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a2340] transition-all"
-              />
+              >
+                <option value="">Select a customer</option>
+                {(settings?.customers || []).map((customer) => (
+                  <option key={customer} value={customer}>
+                    {customer}
+                  </option>
+                ))}
+                <option value="other">Other...</option>
+              </select>
+              
+              {isOtherClient && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="pt-2"
+                >
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Enter new customer name"
+                    value={otherClientValue}
+                    onChange={(e) => setOtherClientValue(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border-2 border-[#1a2340] rounded-xl focus:outline-none transition-all shadow-sm"
+                  />
+                </motion.div>
+              )}
             </div>
           </div>
 
